@@ -1,0 +1,189 @@
+syntax = "proto3";
+
+package nodeforge.v1;
+
+option go_package = "github.com/HeaInSeo/api-protos/gen/go/nodeforge/v1;nodeforgesv1";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PolicyService — DockGuard 정책 번들 관리
+// ─────────────────────────────────────────────────────────────────────────────
+
+service PolicyService {
+  // 최신 DockGuard 정책 번들(.wasm)을 반환한다.
+  rpc GetPolicyBundle(GetPolicyBundleRequest) returns (PolicyBundle);
+
+  // 현재 등록된 정책 목록과 버전을 반환한다.
+  rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+}
+
+message GetPolicyBundleRequest {}
+
+message PolicyBundle {
+  // opa build로 생성된 .wasm 바이트.
+  bytes  wasm_bytes = 1;
+  string version    = 2;
+  int64  built_at   = 3; // Unix timestamp
+}
+
+message ListPoliciesRequest {}
+
+message PolicyInfo {
+  string rule_id    = 1;
+  string name       = 2;
+  string version    = 3;
+  string description = 4;
+}
+
+message ListPoliciesResponse {
+  repeated PolicyInfo policies = 1;
+  string bundle_version        = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BuildService — builder Job orchestration
+// ─────────────────────────────────────────────────────────────────────────────
+
+service BuildService {
+  // BuildRequest를 수신하고 빌드 이벤트 스트림을 반환한다.
+  rpc BuildAndRegister(BuildRequest) returns (stream BuildEvent);
+}
+
+message BuildRequest {
+  string request_id        = 1;
+  string tool_definition_id = 2;
+  string tool_name         = 3;
+
+  // 베이스 이미지 URI (digest 포함)
+  string image_uri         = 4;
+
+  // Dockerfile 내용
+  string dockerfile_content = 5;
+
+  // 실행 스크립트
+  string script            = 6;
+
+  // Named I/O
+  repeated string input_names  = 7;
+  repeated string output_names = 8;
+}
+
+enum BuildEventKind {
+  BUILD_EVENT_KIND_UNSPECIFIED     = 0;
+  BUILD_EVENT_KIND_LOG             = 1;
+  BUILD_EVENT_KIND_JOB_CREATED    = 2;
+  BUILD_EVENT_KIND_JOB_RUNNING    = 3;
+  BUILD_EVENT_KIND_PUSH_SUCCEEDED = 4;
+  BUILD_EVENT_KIND_DIGEST_ACQUIRED = 5;
+  BUILD_EVENT_KIND_SUCCEEDED      = 6;
+  BUILD_EVENT_KIND_FAILED         = 7;
+}
+
+message BuildEvent {
+  BuildEventKind kind = 1;
+  string message      = 2;
+  int64  timestamp    = 3;
+  // digest: BUILD_EVENT_KIND_DIGEST_ACQUIRED 시 채워짐
+  string digest       = 4;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ValidateService — L3 dry-run + L4 smoke run
+// ─────────────────────────────────────────────────────────────────────────────
+
+service ValidateService {
+  // L3: kind server-side dry-run
+  rpc DryRun(DryRunRequest) returns (DryRunResult);
+
+  // L4: 최소 happy-path smoke run
+  rpc SmokeRun(SmokeRunRequest) returns (SmokeRunResult);
+}
+
+message DryRunRequest {
+  string request_id    = 1;
+  string manifest_yaml = 2;
+}
+
+message DryRunResult {
+  bool   success       = 1;
+  string error_message = 2;
+}
+
+message SmokeRunRequest {
+  string request_id    = 1;
+  string manifest_yaml = 2;
+}
+
+message SmokeRunResult {
+  bool   success       = 1;
+  int32  exit_code     = 2;
+  string log_output    = 3;
+  string error_message = 4;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ToolRegistryService — RegisteredToolDefinition 관리
+// ─────────────────────────────────────────────────────────────────────────────
+
+service ToolRegistryService {
+  // 툴을 등록하고 RegisteredToolDefinition을 확정한다.
+  rpc RegisterTool(RegisterToolRequest) returns (RegisterToolResponse);
+
+  // 등록된 툴 단건 조회.
+  rpc GetTool(GetToolRequest) returns (RegisteredToolDefinition);
+
+  // 등록된 툴 목록 조회.
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+}
+
+message RegisterToolRequest {
+  string request_id          = 1;
+  string tool_definition_id  = 2;
+  string tool_name           = 3;
+  string image_uri           = 4;
+  string digest              = 5;
+  repeated string input_names  = 6;
+  repeated string output_names = 7;
+}
+
+message RegisterToolResponse {
+  string cas_hash = 1; // SHA256 hash — CAS 파일명
+  RegisteredToolDefinition tool = 2;
+}
+
+message GetToolRequest {
+  string cas_hash = 1;
+}
+
+message ListToolsRequest {}
+
+message ListToolsResponse {
+  repeated RegisteredToolDefinition tools = 1;
+}
+
+message RegisteredToolDefinition {
+  string cas_hash            = 1;
+  string tool_definition_id  = 2;
+  string tool_name           = 3;
+  string image_uri           = 4;
+  string digest              = 5;
+  repeated string input_names  = 6;
+  repeated string output_names = 7;
+  int64  registered_at       = 8;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PingService — Phase 0 연결 확인용 (ping/pong)
+// ─────────────────────────────────────────────────────────────────────────────
+
+service PingService {
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {
+  string message = 1;
+}
+
+message PingResponse {
+  string message    = 1;
+  string server_id  = 2;
+}
