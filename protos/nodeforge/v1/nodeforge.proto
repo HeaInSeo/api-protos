@@ -65,6 +65,9 @@ message BuildRequest {
   // Named I/O
   repeated string input_names  = 7;
   repeated string output_names = 8;
+
+  // 환경 스펙 파일 내용 (conda environment.yml, requirements.txt 등)
+  string environment_spec  = 9;
 }
 
 enum BuildEventKind {
@@ -143,6 +146,7 @@ message RegisterToolRequest {
   string digest              = 5;
   repeated string input_names  = 6;
   repeated string output_names = 7;
+  string environment_spec    = 8;
 }
 
 message RegisterToolResponse {
@@ -169,6 +173,7 @@ message RegisteredToolDefinition {
   repeated string input_names  = 6;
   repeated string output_names = 7;
   int64  registered_at       = 8;
+  string environment_spec    = 9;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

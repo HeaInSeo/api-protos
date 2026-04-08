@@ -350,10 +350,12 @@ type BuildRequest struct {
 	// 실행 스크립트
 	Script string `protobuf:"bytes,6,opt,name=script,proto3" json:"script,omitempty"`
 	// Named I/O
-	InputNames    []string `protobuf:"bytes,7,rep,name=input_names,json=inputNames,proto3" json:"input_names,omitempty"`
-	OutputNames   []string `protobuf:"bytes,8,rep,name=output_names,json=outputNames,proto3" json:"output_names,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	InputNames  []string `protobuf:"bytes,7,rep,name=input_names,json=inputNames,proto3" json:"input_names,omitempty"`
+	OutputNames []string `protobuf:"bytes,8,rep,name=output_names,json=outputNames,proto3" json:"output_names,omitempty"`
+	// 환경 스펙 파일 내용 (conda environment.yml, requirements.txt 등)
+	EnvironmentSpec string `protobuf:"bytes,9,opt,name=environment_spec,json=environmentSpec,proto3" json:"environment_spec,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *BuildRequest) Reset() {
@@ -440,6 +442,13 @@ func (x *BuildRequest) GetOutputNames() []string {
 		return x.OutputNames
 	}
 	return nil
+}
+
+func (x *BuildRequest) GetEnvironmentSpec() string {
+	if x != nil {
+		return x.EnvironmentSpec
+	}
+	return ""
 }
 
 type BuildEvent struct {
@@ -744,6 +753,7 @@ type RegisterToolRequest struct {
 	Digest           string                 `protobuf:"bytes,5,opt,name=digest,proto3" json:"digest,omitempty"`
 	InputNames       []string               `protobuf:"bytes,6,rep,name=input_names,json=inputNames,proto3" json:"input_names,omitempty"`
 	OutputNames      []string               `protobuf:"bytes,7,rep,name=output_names,json=outputNames,proto3" json:"output_names,omitempty"`
+	EnvironmentSpec  string                 `protobuf:"bytes,8,opt,name=environment_spec,json=environmentSpec,proto3" json:"environment_spec,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -825,6 +835,13 @@ func (x *RegisterToolRequest) GetOutputNames() []string {
 		return x.OutputNames
 	}
 	return nil
+}
+
+func (x *RegisterToolRequest) GetEnvironmentSpec() string {
+	if x != nil {
+		return x.EnvironmentSpec
+	}
+	return ""
 }
 
 type RegisterToolResponse struct {
@@ -1013,6 +1030,7 @@ type RegisteredToolDefinition struct {
 	InputNames       []string               `protobuf:"bytes,6,rep,name=input_names,json=inputNames,proto3" json:"input_names,omitempty"`
 	OutputNames      []string               `protobuf:"bytes,7,rep,name=output_names,json=outputNames,proto3" json:"output_names,omitempty"`
 	RegisteredAt     int64                  `protobuf:"varint,8,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
+	EnvironmentSpec  string                 `protobuf:"bytes,9,opt,name=environment_spec,json=environmentSpec,proto3" json:"environment_spec,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1101,6 +1119,13 @@ func (x *RegisteredToolDefinition) GetRegisteredAt() int64 {
 		return x.RegisteredAt
 	}
 	return 0
+}
+
+func (x *RegisteredToolDefinition) GetEnvironmentSpec() string {
+	if x != nil {
+		return x.EnvironmentSpec
+	}
+	return ""
 }
 
 type PingRequest struct {
@@ -1219,7 +1244,7 @@ const file_nodeforge_v1_nodeforge_proto_rawDesc = "" +
 	"\vdescription\x18\x04 \x01(\tR\vdescription\"s\n" +
 	"\x14ListPoliciesResponse\x124\n" +
 	"\bpolicies\x18\x01 \x03(\v2\x18.nodeforge.v1.PolicyInfoR\bpolicies\x12%\n" +
-	"\x0ebundle_version\x18\x02 \x01(\tR\rbundleVersion\"\xa0\x02\n" +
+	"\x0ebundle_version\x18\x02 \x01(\tR\rbundleVersion\"\xcb\x02\n" +
 	"\fBuildRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12,\n" +
@@ -1230,7 +1255,8 @@ const file_nodeforge_v1_nodeforge_proto_rawDesc = "" +
 	"\x06script\x18\x06 \x01(\tR\x06script\x12\x1f\n" +
 	"\vinput_names\x18\a \x03(\tR\n" +
 	"inputNames\x12!\n" +
-	"\foutput_names\x18\b \x03(\tR\voutputNames\"\x8e\x01\n" +
+	"\foutput_names\x18\b \x03(\tR\voutputNames\x12)\n" +
+	"\x10environment_spec\x18\t \x01(\tR\x0fenvironmentSpec\"\x8e\x01\n" +
 	"\n" +
 	"BuildEvent\x120\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1c.nodeforge.v1.BuildEventKindR\x04kind\x12\x18\n" +
@@ -1253,7 +1279,7 @@ const file_nodeforge_v1_nodeforge_proto_rawDesc = "" +
 	"\texit_code\x18\x02 \x01(\x05R\bexitCode\x12\x1d\n" +
 	"\n" +
 	"log_output\x18\x03 \x01(\tR\tlogOutput\x12#\n" +
-	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\"\xf8\x01\n" +
+	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\"\xa3\x02\n" +
 	"\x13RegisterToolRequest\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\tR\trequestId\x12,\n" +
@@ -1263,7 +1289,8 @@ const file_nodeforge_v1_nodeforge_proto_rawDesc = "" +
 	"\x06digest\x18\x05 \x01(\tR\x06digest\x12\x1f\n" +
 	"\vinput_names\x18\x06 \x03(\tR\n" +
 	"inputNames\x12!\n" +
-	"\foutput_names\x18\a \x03(\tR\voutputNames\"m\n" +
+	"\foutput_names\x18\a \x03(\tR\voutputNames\x12)\n" +
+	"\x10environment_spec\x18\b \x01(\tR\x0fenvironmentSpec\"m\n" +
 	"\x14RegisterToolResponse\x12\x19\n" +
 	"\bcas_hash\x18\x01 \x01(\tR\acasHash\x12:\n" +
 	"\x04tool\x18\x02 \x01(\v2&.nodeforge.v1.RegisteredToolDefinitionR\x04tool\"+\n" +
@@ -1271,7 +1298,7 @@ const file_nodeforge_v1_nodeforge_proto_rawDesc = "" +
 	"\bcas_hash\x18\x01 \x01(\tR\acasHash\"\x12\n" +
 	"\x10ListToolsRequest\"Q\n" +
 	"\x11ListToolsResponse\x12<\n" +
-	"\x05tools\x18\x01 \x03(\v2&.nodeforge.v1.RegisteredToolDefinitionR\x05tools\"\x9e\x02\n" +
+	"\x05tools\x18\x01 \x03(\v2&.nodeforge.v1.RegisteredToolDefinitionR\x05tools\"\xc9\x02\n" +
 	"\x18RegisteredToolDefinition\x12\x19\n" +
 	"\bcas_hash\x18\x01 \x01(\tR\acasHash\x12,\n" +
 	"\x12tool_definition_id\x18\x02 \x01(\tR\x10toolDefinitionId\x12\x1b\n" +
@@ -1281,7 +1308,8 @@ const file_nodeforge_v1_nodeforge_proto_rawDesc = "" +
 	"\vinput_names\x18\x06 \x03(\tR\n" +
 	"inputNames\x12!\n" +
 	"\foutput_names\x18\a \x03(\tR\voutputNames\x12#\n" +
-	"\rregistered_at\x18\b \x01(\x03R\fregisteredAt\"'\n" +
+	"\rregistered_at\x18\b \x01(\x03R\fregisteredAt\x12)\n" +
+	"\x10environment_spec\x18\t \x01(\tR\x0fenvironmentSpec\"'\n" +
 	"\vPingRequest\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"E\n" +
 	"\fPingResponse\x12\x18\n" +
