@@ -1,6 +1,6 @@
 module github.com/HeaInSeo/api-protos/gen/go/nodeforge/v1
 
-go 1.24.0
+go 1.25.5
 
 require (
 	google.golang.org/grpc v1.72.0

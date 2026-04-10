@@ -1,6 +1,6 @@
 module github.com/seoyhaein/api-protos/gen/go/datablock/ichthys
 
-go 1.24.0
+go 1.25.5
 
 require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250528174236-200df99c418a
