@@ -5,6 +5,38 @@ package nodeforge.v1;
 option go_package = "github.com/HeaInSeo/api-protos/gen/go/nodeforge/v1;nodeforgesv1";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 공통 스펙 메시지 (RegisteredTool v0.2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// PortSpec: 툴의 단일 입력 또는 출력 포트 계약.
+// inputs에서는 required가 유효. outputs에서는 class가 유효.
+message PortSpec {
+  string name   = 1;  // 포트 이름 (예: "reads", "aligned_bam")
+  string role   = 2;  // 의미적 역할 (예: "sample-fastq", "aligned-bam")
+  string format = 3;  // 데이터 형식 (예: "fastq", "bam", "text")
+  string shape  = 4;  // "single" | "pair"
+  bool   required = 5; // input 전용
+  string class  = 6;  // output 전용: "primary" | "secondary"
+  map<string, string> constraints = 7; // output 전용: 예) sorted=coordinate
+}
+
+// DisplaySpec: 사용자 UI 팔레트 표시용 메타데이터.
+// stableRef(UI 검색)와 함께 쓰임. 파이프라인 pin 기준은 casHash.
+message DisplaySpec {
+  string label       = 1;  // UI 카드 제목 (예: "BWA-MEM 0.7.17")
+  string description = 2;  // 툴팁 설명
+  string category    = 3;  // 그룹핑 카테고리 (예: "Alignment")
+  repeated string tags = 4; // 검색 태그
+}
+
+// ValidationStatus: L3/L4 검증 결과 상태.
+message ValidationStatus {
+  string phase             = 1;  // "Pending" | "Running" | "Passed" | "Failed"
+  int64  last_validated_at = 2;  // Unix timestamp
+  repeated string failures = 3;  // phase=Failed일 때 실패 사유 목록
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PolicyService — DockGuard 정책 번들 관리
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -49,25 +81,32 @@ service BuildService {
 }
 
 message BuildRequest {
-  string request_id        = 1;
+  string request_id         = 1;
   string tool_definition_id = 2;
-  string tool_name         = 3;
+  string tool_name          = 3;
 
   // 베이스 이미지 URI (digest 포함)
-  string image_uri         = 4;
+  string image_uri          = 4;
 
   // Dockerfile 내용
   string dockerfile_content = 5;
 
   // 실행 스크립트
-  string script            = 6;
-
-  // Named I/O
-  repeated string input_names  = 7;
-  repeated string output_names = 8;
+  string script             = 6;
 
   // 환경 스펙 파일 내용 (conda environment.yml, requirements.txt 등)
-  string environment_spec  = 9;
+  string environment_spec   = 9;
+
+  // v0.2 추가 필드 ──────────────────────────────────────────────────────────
+  string version            = 10; // 툴 버전 (예: "0.7.17"). stable_ref = tool_name@version.
+  repeated PortSpec inputs  = 12; // 포트 계약 (역할, 형식, shape 포함)
+  repeated PortSpec outputs = 13;
+  DisplaySpec display       = 14; // UI 팔레트 표시 메타데이터
+  string command            = 15; // 컨테이너 진입점 (선택; 없으면 Dockerfile ENTRYPOINT 사용)
+
+  // 필드 번호 7, 8은 예약됨 (이전 input_names, output_names — 재사용 금지)
+  reserved 7, 8;
+  reserved "input_names", "output_names";
 }
 
 enum BuildEventKind {
@@ -139,14 +178,24 @@ service ToolRegistryService {
 }
 
 message RegisterToolRequest {
-  string request_id          = 1;
-  string tool_definition_id  = 2;
-  string tool_name           = 3;
-  string image_uri           = 4;
-  string digest              = 5;
-  repeated string input_names  = 6;
-  repeated string output_names = 7;
-  string environment_spec    = 8;
+  string request_id         = 1;
+  string tool_definition_id = 2;
+  string tool_name          = 3;
+  string image_uri          = 4;
+  string digest             = 5;
+  string environment_spec   = 8;
+
+  // v0.2 추가 필드 ──────────────────────────────────────────────────────────
+  string version            = 9;  // 툴 버전
+  string stable_ref         = 10; // NodeForge가 tool_name@version으로 조립해 저장
+  repeated PortSpec inputs  = 11;
+  repeated PortSpec outputs = 12;
+  DisplaySpec display       = 13;
+  string command            = 14;
+
+  // 필드 번호 6, 7은 예약됨 (이전 input_names, output_names — 재사용 금지)
+  reserved 6, 7;
+  reserved "input_names", "output_names";
 }
 
 message RegisterToolResponse {
@@ -165,15 +214,27 @@ message ListToolsResponse {
 }
 
 message RegisteredToolDefinition {
-  string cas_hash            = 1;
-  string tool_definition_id  = 2;
-  string tool_name           = 3;
-  string image_uri           = 4;
-  string digest              = 5;
-  repeated string input_names  = 6;
-  repeated string output_names = 7;
-  int64  registered_at       = 8;
-  string environment_spec    = 9;
+  string cas_hash           = 1;  // SHA256(spec JSON) — 파이프라인 toolRef의 고정 기준
+  string tool_definition_id = 2;
+  string tool_name          = 3;
+  string image_uri          = 4;
+  string digest             = 5;  // 이미지 레이어 digest
+  int64  registered_at      = 8;
+  string environment_spec   = 9;
+
+  // v0.2 추가 필드 ──────────────────────────────────────────────────────────
+  string version            = 10; // 툴 버전 (예: "0.7.17")
+  string stable_ref         = 11; // UI/검색 전용 (tool_name@version). 파이프라인 pin 금지.
+  repeated PortSpec inputs  = 12;
+  repeated PortSpec outputs = 13;
+  DisplaySpec display       = 14;
+  string phase              = 15; // "Active" | "Retracted"
+  ValidationStatus validation = 16;
+  string command            = 17;
+
+  // 필드 번호 6, 7은 예약됨 (이전 input_names, output_names — 재사용 금지)
+  reserved 6, 7;
+  reserved "input_names", "output_names";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
