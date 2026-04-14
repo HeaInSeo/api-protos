@@ -1223,7 +1223,9 @@ func (x *GetToolRequest) GetCasHash() string {
 }
 
 type ListToolsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// stableRef 기준 필터. 비어 있으면 전체 반환.
+	StableRef     string `protobuf:"bytes,1,opt,name=stable_ref,json=stableRef,proto3" json:"stable_ref,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1256,6 +1258,13 @@ func (x *ListToolsRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListToolsRequest.ProtoReflect.Descriptor instead.
 func (*ListToolsRequest) Descriptor() ([]byte, []int) {
 	return file_nodeforge_v1_nodeforge_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListToolsRequest) GetStableRef() string {
+	if x != nil {
+		return x.StableRef
+	}
+	return ""
 }
 
 type ListToolsResponse struct {
@@ -1312,16 +1321,20 @@ type RegisteredToolDefinition struct {
 	RegisteredAt     int64                  `protobuf:"varint,8,opt,name=registered_at,json=registeredAt,proto3" json:"registered_at,omitempty"`
 	EnvironmentSpec  string                 `protobuf:"bytes,9,opt,name=environment_spec,json=environmentSpec,proto3" json:"environment_spec,omitempty"`
 	// v0.2 추가 필드 ──────────────────────────────────────────────────────────
-	Version       string            `protobuf:"bytes,10,opt,name=version,proto3" json:"version,omitempty"`                      // 툴 버전 (예: "0.7.17")
-	StableRef     string            `protobuf:"bytes,11,opt,name=stable_ref,json=stableRef,proto3" json:"stable_ref,omitempty"` // UI/검색 전용 (tool_name@version). 파이프라인 pin 금지.
-	Inputs        []*PortSpec       `protobuf:"bytes,12,rep,name=inputs,proto3" json:"inputs,omitempty"`
-	Outputs       []*PortSpec       `protobuf:"bytes,13,rep,name=outputs,proto3" json:"outputs,omitempty"`
-	Display       *DisplaySpec      `protobuf:"bytes,14,opt,name=display,proto3" json:"display,omitempty"`
-	Phase         string            `protobuf:"bytes,15,opt,name=phase,proto3" json:"phase,omitempty"` // "Active" | "Retracted"
-	Validation    *ValidationStatus `protobuf:"bytes,16,opt,name=validation,proto3" json:"validation,omitempty"`
-	Command       string            `protobuf:"bytes,17,opt,name=command,proto3" json:"command,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Version   string       `protobuf:"bytes,10,opt,name=version,proto3" json:"version,omitempty"`                      // 툴 버전 (예: "0.7.17")
+	StableRef string       `protobuf:"bytes,11,opt,name=stable_ref,json=stableRef,proto3" json:"stable_ref,omitempty"` // UI/검색 전용 (tool_name@version). 파이프라인 pin 금지.
+	Inputs    []*PortSpec  `protobuf:"bytes,12,rep,name=inputs,proto3" json:"inputs,omitempty"`
+	Outputs   []*PortSpec  `protobuf:"bytes,13,rep,name=outputs,proto3" json:"outputs,omitempty"`
+	Display   *DisplaySpec `protobuf:"bytes,14,opt,name=display,proto3" json:"display,omitempty"`
+	// 상태 이중 축 — 절대 같은 필드에 섞지 않는다.
+	// lifecycle_phase: NodeVault 명시적 호출만 변경 (운영 의도)
+	LifecyclePhase string            `protobuf:"bytes,15,opt,name=lifecycle_phase,json=lifecyclePhase,proto3" json:"lifecycle_phase,omitempty"` // "Pending" | "Active" | "Retracted" | "Deleted"
+	Validation     *ValidationStatus `protobuf:"bytes,16,opt,name=validation,proto3" json:"validation,omitempty"`
+	Command        string            `protobuf:"bytes,17,opt,name=command,proto3" json:"command,omitempty"`
+	// integrity_health: reconcile loop만 변경 (Harbor 정합성 관찰 결과)
+	IntegrityHealth string `protobuf:"bytes,18,opt,name=integrity_health,json=integrityHealth,proto3" json:"integrity_health,omitempty"` // "Healthy" | "Partial" | "Missing" | "Unreachable" | "Orphaned"
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *RegisteredToolDefinition) Reset() {
@@ -1438,9 +1451,9 @@ func (x *RegisteredToolDefinition) GetDisplay() *DisplaySpec {
 	return nil
 }
 
-func (x *RegisteredToolDefinition) GetPhase() string {
+func (x *RegisteredToolDefinition) GetLifecyclePhase() string {
 	if x != nil {
-		return x.Phase
+		return x.LifecyclePhase
 	}
 	return ""
 }
@@ -1455,6 +1468,13 @@ func (x *RegisteredToolDefinition) GetValidation() *ValidationStatus {
 func (x *RegisteredToolDefinition) GetCommand() string {
 	if x != nil {
 		return x.Command
+	}
+	return ""
+}
+
+func (x *RegisteredToolDefinition) GetIntegrityHealth() string {
+	if x != nil {
+		return x.IntegrityHealth
 	}
 	return ""
 }
@@ -1654,10 +1674,12 @@ const file_nodeforge_v1_nodeforge_proto_rawDesc = "" +
 	"\bcas_hash\x18\x01 \x01(\tR\acasHash\x12:\n" +
 	"\x04tool\x18\x02 \x01(\v2&.nodeforge.v1.RegisteredToolDefinitionR\x04tool\"+\n" +
 	"\x0eGetToolRequest\x12\x19\n" +
-	"\bcas_hash\x18\x01 \x01(\tR\acasHash\"\x12\n" +
-	"\x10ListToolsRequest\"Q\n" +
+	"\bcas_hash\x18\x01 \x01(\tR\acasHash\"1\n" +
+	"\x10ListToolsRequest\x12\x1d\n" +
+	"\n" +
+	"stable_ref\x18\x01 \x01(\tR\tstableRef\"Q\n" +
 	"\x11ListToolsResponse\x12<\n" +
-	"\x05tools\x18\x01 \x03(\v2&.nodeforge.v1.RegisteredToolDefinitionR\x05tools\"\xec\x04\n" +
+	"\x05tools\x18\x01 \x03(\v2&.nodeforge.v1.RegisteredToolDefinitionR\x05tools\"\xaa\x05\n" +
 	"\x18RegisteredToolDefinition\x12\x19\n" +
 	"\bcas_hash\x18\x01 \x01(\tR\acasHash\x12,\n" +
 	"\x12tool_definition_id\x18\x02 \x01(\tR\x10toolDefinitionId\x12\x1b\n" +
@@ -1672,12 +1694,13 @@ const file_nodeforge_v1_nodeforge_proto_rawDesc = "" +
 	"stable_ref\x18\v \x01(\tR\tstableRef\x12.\n" +
 	"\x06inputs\x18\f \x03(\v2\x16.nodeforge.v1.PortSpecR\x06inputs\x120\n" +
 	"\aoutputs\x18\r \x03(\v2\x16.nodeforge.v1.PortSpecR\aoutputs\x123\n" +
-	"\adisplay\x18\x0e \x01(\v2\x19.nodeforge.v1.DisplaySpecR\adisplay\x12\x14\n" +
-	"\x05phase\x18\x0f \x01(\tR\x05phase\x12>\n" +
+	"\adisplay\x18\x0e \x01(\v2\x19.nodeforge.v1.DisplaySpecR\adisplay\x12'\n" +
+	"\x0flifecycle_phase\x18\x0f \x01(\tR\x0elifecyclePhase\x12>\n" +
 	"\n" +
 	"validation\x18\x10 \x01(\v2\x1e.nodeforge.v1.ValidationStatusR\n" +
 	"validation\x12\x18\n" +
-	"\acommand\x18\x11 \x01(\tR\acommandJ\x04\b\x06\x10\aJ\x04\b\a\x10\bR\vinput_namesR\foutput_names\"'\n" +
+	"\acommand\x18\x11 \x01(\tR\acommand\x12)\n" +
+	"\x10integrity_health\x18\x12 \x01(\tR\x0fintegrityHealthJ\x04\b\x06\x10\aJ\x04\b\a\x10\bR\vinput_namesR\foutput_names\"'\n" +
 	"\vPingRequest\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"E\n" +
 	"\fPingResponse\x12\x18\n" +

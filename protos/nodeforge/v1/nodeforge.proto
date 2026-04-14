@@ -207,7 +207,10 @@ message GetToolRequest {
   string cas_hash = 1;
 }
 
-message ListToolsRequest {}
+message ListToolsRequest {
+  // stableRef 기준 필터. 비어 있으면 전체 반환.
+  string stable_ref = 1;
+}
 
 message ListToolsResponse {
   repeated RegisteredToolDefinition tools = 1;
@@ -228,9 +231,14 @@ message RegisteredToolDefinition {
   repeated PortSpec inputs  = 12;
   repeated PortSpec outputs = 13;
   DisplaySpec display       = 14;
-  string phase              = 15; // "Active" | "Retracted"
+
+  // 상태 이중 축 — 절대 같은 필드에 섞지 않는다.
+  // lifecycle_phase: NodeVault 명시적 호출만 변경 (운영 의도)
+  string lifecycle_phase    = 15; // "Pending" | "Active" | "Retracted" | "Deleted"
   ValidationStatus validation = 16;
   string command            = 17;
+  // integrity_health: reconcile loop만 변경 (Harbor 정합성 관찰 결과)
+  string integrity_health   = 18; // "Healthy" | "Partial" | "Missing" | "Unreachable" | "Orphaned"
 
   // 필드 번호 6, 7은 예약됨 (이전 input_names, output_names — 재사용 금지)
   reserved 6, 7;
