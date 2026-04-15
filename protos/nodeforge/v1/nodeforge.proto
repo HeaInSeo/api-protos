@@ -175,6 +175,12 @@ service ToolRegistryService {
 
   // 등록된 툴 목록 조회.
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse);
+
+  // lifecycle_phase → Retracted (운영 의도: 숨김). NodeVault only.
+  rpc RetractTool(RetractToolRequest) returns (RetractToolResponse);
+
+  // lifecycle_phase → Deleted (운영 의도: 완전 퇴출). NodeVault only.
+  rpc DeleteTool(DeleteToolRequest) returns (DeleteToolResponse);
 }
 
 message RegisterToolRequest {
@@ -210,6 +216,8 @@ message GetToolRequest {
 message ListToolsRequest {
   // stableRef 기준 필터. 비어 있으면 전체 반환.
   string stable_ref = 1;
+  // artifact_kind 필터: "tool" | "data". 비어 있으면 전체 반환.
+  string artifact_kind = 2;
 }
 
 message ListToolsResponse {
@@ -243,6 +251,93 @@ message RegisteredToolDefinition {
   // 필드 번호 6, 7은 예약됨 (이전 input_names, output_names — 재사용 금지)
   reserved 6, 7;
   reserved "input_names", "output_names";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ToolRegistryService — lifecycle 전이 확장 (Retract / Delete)
+// ─────────────────────────────────────────────────────────────────────────────
+
+message RetractToolRequest {
+  string cas_hash = 1; // 대상 artifact의 CAS hash (primary key)
+  string reason   = 2; // 철회 사유 (운영 로그용)
+}
+
+message RetractToolResponse {
+  string cas_hash       = 1;
+  string lifecycle_phase = 2; // 전이 후 phase ("Retracted")
+}
+
+message DeleteToolRequest {
+  string cas_hash = 1;
+  string reason   = 2;
+}
+
+message DeleteToolResponse {
+  string cas_hash       = 1;
+  string lifecycle_phase = 2; // 전이 후 phase ("Deleted")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DataRegistryService — 참조 데이터(reference data) artifact 관리
+// ─────────────────────────────────────────────────────────────────────────────
+
+service DataRegistryService {
+  // 참조 데이터를 등록하고 RegisteredDataDefinition을 확정한다.
+  rpc RegisterData(DataRegisterRequest) returns (DataRegisterResponse);
+
+  // 등록된 데이터 단건 조회.
+  rpc GetData(GetDataRequest) returns (RegisteredDataDefinition);
+
+  // 등록된 데이터 목록 조회.
+  rpc ListData(ListDataRequest) returns (ListDataResponse);
+}
+
+message DataRegisterRequest {
+  string request_id   = 1;
+  string data_name    = 2;  // 예: "hg38-reference"
+  string version      = 3;  // 예: "2024-01"
+  string description  = 4;
+  string format       = 5;  // 예: "FASTA" | "VCF" | "BED"
+  string source_uri   = 6;  // 원본 소스 URI (추적용)
+  string checksum     = 7;  // SHA256 of the data artifact
+  string storage_uri  = 8;  // Harbor 등록 후 접근 URI (optional — NodeVault가 채움)
+  string stable_ref   = 9;  // data_name@version (NodeVault가 조립해 저장)
+  DisplaySpec display = 10;
+}
+
+message DataRegisterResponse {
+  string cas_hash = 1;
+  RegisteredDataDefinition data = 2;
+}
+
+message GetDataRequest {
+  string cas_hash = 1;
+}
+
+message ListDataRequest {
+  string stable_ref    = 1; // stableRef 기준 필터. 비어 있으면 전체 반환.
+}
+
+message ListDataResponse {
+  repeated RegisteredDataDefinition data = 1;
+}
+
+message RegisteredDataDefinition {
+  string cas_hash       = 1;  // SHA256(spec JSON) — 파이프라인 dataRef pin 기준
+  string data_name      = 2;
+  string version        = 3;
+  string description    = 4;
+  string format         = 5;
+  string source_uri     = 6;
+  string checksum       = 7;
+  string storage_uri    = 8;
+  string stable_ref     = 9;
+  DisplaySpec display   = 10;
+  int64  registered_at  = 11;
+
+  // 상태 이중 축
+  string lifecycle_phase  = 12; // "Pending" | "Active" | "Retracted" | "Deleted"
+  string integrity_health = 13; // "Healthy" | "Partial" | "Missing" | "Unreachable" | "Orphaned"
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

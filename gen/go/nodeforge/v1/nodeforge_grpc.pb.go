@@ -417,6 +417,8 @@ const (
 	ToolRegistryService_RegisterTool_FullMethodName = "/nodeforge.v1.ToolRegistryService/RegisterTool"
 	ToolRegistryService_GetTool_FullMethodName      = "/nodeforge.v1.ToolRegistryService/GetTool"
 	ToolRegistryService_ListTools_FullMethodName    = "/nodeforge.v1.ToolRegistryService/ListTools"
+	ToolRegistryService_RetractTool_FullMethodName  = "/nodeforge.v1.ToolRegistryService/RetractTool"
+	ToolRegistryService_DeleteTool_FullMethodName   = "/nodeforge.v1.ToolRegistryService/DeleteTool"
 )
 
 // ToolRegistryServiceClient is the client API for ToolRegistryService service.
@@ -429,6 +431,10 @@ type ToolRegistryServiceClient interface {
 	GetTool(ctx context.Context, in *GetToolRequest, opts ...grpc.CallOption) (*RegisteredToolDefinition, error)
 	// 등록된 툴 목록 조회.
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
+	// lifecycle_phase → Retracted (운영 의도: 숨김). NodeVault only.
+	RetractTool(ctx context.Context, in *RetractToolRequest, opts ...grpc.CallOption) (*RetractToolResponse, error)
+	// lifecycle_phase → Deleted (운영 의도: 완전 퇴출). NodeVault only.
+	DeleteTool(ctx context.Context, in *DeleteToolRequest, opts ...grpc.CallOption) (*DeleteToolResponse, error)
 }
 
 type toolRegistryServiceClient struct {
@@ -469,6 +475,26 @@ func (c *toolRegistryServiceClient) ListTools(ctx context.Context, in *ListTools
 	return out, nil
 }
 
+func (c *toolRegistryServiceClient) RetractTool(ctx context.Context, in *RetractToolRequest, opts ...grpc.CallOption) (*RetractToolResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RetractToolResponse)
+	err := c.cc.Invoke(ctx, ToolRegistryService_RetractTool_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *toolRegistryServiceClient) DeleteTool(ctx context.Context, in *DeleteToolRequest, opts ...grpc.CallOption) (*DeleteToolResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteToolResponse)
+	err := c.cc.Invoke(ctx, ToolRegistryService_DeleteTool_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ToolRegistryServiceServer is the server API for ToolRegistryService service.
 // All implementations must embed UnimplementedToolRegistryServiceServer
 // for forward compatibility.
@@ -479,6 +505,10 @@ type ToolRegistryServiceServer interface {
 	GetTool(context.Context, *GetToolRequest) (*RegisteredToolDefinition, error)
 	// 등록된 툴 목록 조회.
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
+	// lifecycle_phase → Retracted (운영 의도: 숨김). NodeVault only.
+	RetractTool(context.Context, *RetractToolRequest) (*RetractToolResponse, error)
+	// lifecycle_phase → Deleted (운영 의도: 완전 퇴출). NodeVault only.
+	DeleteTool(context.Context, *DeleteToolRequest) (*DeleteToolResponse, error)
 	mustEmbedUnimplementedToolRegistryServiceServer()
 }
 
@@ -497,6 +527,12 @@ func (UnimplementedToolRegistryServiceServer) GetTool(context.Context, *GetToolR
 }
 func (UnimplementedToolRegistryServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTools not implemented")
+}
+func (UnimplementedToolRegistryServiceServer) RetractTool(context.Context, *RetractToolRequest) (*RetractToolResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RetractTool not implemented")
+}
+func (UnimplementedToolRegistryServiceServer) DeleteTool(context.Context, *DeleteToolRequest) (*DeleteToolResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteTool not implemented")
 }
 func (UnimplementedToolRegistryServiceServer) mustEmbedUnimplementedToolRegistryServiceServer() {}
 func (UnimplementedToolRegistryServiceServer) testEmbeddedByValue()                             {}
@@ -573,6 +609,42 @@ func _ToolRegistryService_ListTools_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ToolRegistryService_RetractTool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetractToolRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ToolRegistryServiceServer).RetractTool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ToolRegistryService_RetractTool_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ToolRegistryServiceServer).RetractTool(ctx, req.(*RetractToolRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ToolRegistryService_DeleteTool_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteToolRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ToolRegistryServiceServer).DeleteTool(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ToolRegistryService_DeleteTool_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ToolRegistryServiceServer).DeleteTool(ctx, req.(*DeleteToolRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ToolRegistryService_ServiceDesc is the grpc.ServiceDesc for ToolRegistryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -591,6 +663,198 @@ var ToolRegistryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTools",
 			Handler:    _ToolRegistryService_ListTools_Handler,
+		},
+		{
+			MethodName: "RetractTool",
+			Handler:    _ToolRegistryService_RetractTool_Handler,
+		},
+		{
+			MethodName: "DeleteTool",
+			Handler:    _ToolRegistryService_DeleteTool_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "nodeforge/v1/nodeforge.proto",
+}
+
+const (
+	DataRegistryService_RegisterData_FullMethodName = "/nodeforge.v1.DataRegistryService/RegisterData"
+	DataRegistryService_GetData_FullMethodName      = "/nodeforge.v1.DataRegistryService/GetData"
+	DataRegistryService_ListData_FullMethodName     = "/nodeforge.v1.DataRegistryService/ListData"
+)
+
+// DataRegistryServiceClient is the client API for DataRegistryService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type DataRegistryServiceClient interface {
+	// 참조 데이터를 등록하고 RegisteredDataDefinition을 확정한다.
+	RegisterData(ctx context.Context, in *DataRegisterRequest, opts ...grpc.CallOption) (*DataRegisterResponse, error)
+	// 등록된 데이터 단건 조회.
+	GetData(ctx context.Context, in *GetDataRequest, opts ...grpc.CallOption) (*RegisteredDataDefinition, error)
+	// 등록된 데이터 목록 조회.
+	ListData(ctx context.Context, in *ListDataRequest, opts ...grpc.CallOption) (*ListDataResponse, error)
+}
+
+type dataRegistryServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDataRegistryServiceClient(cc grpc.ClientConnInterface) DataRegistryServiceClient {
+	return &dataRegistryServiceClient{cc}
+}
+
+func (c *dataRegistryServiceClient) RegisterData(ctx context.Context, in *DataRegisterRequest, opts ...grpc.CallOption) (*DataRegisterResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DataRegisterResponse)
+	err := c.cc.Invoke(ctx, DataRegistryService_RegisterData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataRegistryServiceClient) GetData(ctx context.Context, in *GetDataRequest, opts ...grpc.CallOption) (*RegisteredDataDefinition, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegisteredDataDefinition)
+	err := c.cc.Invoke(ctx, DataRegistryService_GetData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dataRegistryServiceClient) ListData(ctx context.Context, in *ListDataRequest, opts ...grpc.CallOption) (*ListDataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListDataResponse)
+	err := c.cc.Invoke(ctx, DataRegistryService_ListData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DataRegistryServiceServer is the server API for DataRegistryService service.
+// All implementations must embed UnimplementedDataRegistryServiceServer
+// for forward compatibility.
+type DataRegistryServiceServer interface {
+	// 참조 데이터를 등록하고 RegisteredDataDefinition을 확정한다.
+	RegisterData(context.Context, *DataRegisterRequest) (*DataRegisterResponse, error)
+	// 등록된 데이터 단건 조회.
+	GetData(context.Context, *GetDataRequest) (*RegisteredDataDefinition, error)
+	// 등록된 데이터 목록 조회.
+	ListData(context.Context, *ListDataRequest) (*ListDataResponse, error)
+	mustEmbedUnimplementedDataRegistryServiceServer()
+}
+
+// UnimplementedDataRegistryServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedDataRegistryServiceServer struct{}
+
+func (UnimplementedDataRegistryServiceServer) RegisterData(context.Context, *DataRegisterRequest) (*DataRegisterResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RegisterData not implemented")
+}
+func (UnimplementedDataRegistryServiceServer) GetData(context.Context, *GetDataRequest) (*RegisteredDataDefinition, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetData not implemented")
+}
+func (UnimplementedDataRegistryServiceServer) ListData(context.Context, *ListDataRequest) (*ListDataResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListData not implemented")
+}
+func (UnimplementedDataRegistryServiceServer) mustEmbedUnimplementedDataRegistryServiceServer() {}
+func (UnimplementedDataRegistryServiceServer) testEmbeddedByValue()                             {}
+
+// UnsafeDataRegistryServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DataRegistryServiceServer will
+// result in compilation errors.
+type UnsafeDataRegistryServiceServer interface {
+	mustEmbedUnimplementedDataRegistryServiceServer()
+}
+
+func RegisterDataRegistryServiceServer(s grpc.ServiceRegistrar, srv DataRegistryServiceServer) {
+	// If the following call panics, it indicates UnimplementedDataRegistryServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&DataRegistryService_ServiceDesc, srv)
+}
+
+func _DataRegistryService_RegisterData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DataRegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataRegistryServiceServer).RegisterData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataRegistryService_RegisterData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataRegistryServiceServer).RegisterData(ctx, req.(*DataRegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataRegistryService_GetData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataRegistryServiceServer).GetData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataRegistryService_GetData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataRegistryServiceServer).GetData(ctx, req.(*GetDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DataRegistryService_ListData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DataRegistryServiceServer).ListData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DataRegistryService_ListData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DataRegistryServiceServer).ListData(ctx, req.(*ListDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// DataRegistryService_ServiceDesc is the grpc.ServiceDesc for DataRegistryService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var DataRegistryService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "nodeforge.v1.DataRegistryService",
+	HandlerType: (*DataRegistryServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RegisterData",
+			Handler:    _DataRegistryService_RegisterData_Handler,
+		},
+		{
+			MethodName: "GetData",
+			Handler:    _DataRegistryService_GetData_Handler,
+		},
+		{
+			MethodName: "ListData",
+			Handler:    _DataRegistryService_ListData_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
